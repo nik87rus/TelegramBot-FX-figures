@@ -75,6 +75,7 @@ def get_stat_from_finmarket(currency, initial_date):
         try:
             my_table = obj.find_all('table', {'class': 'karramba'})[0]
         except Exception: # если уж и сейчас ошибка при обращении к нулевому элементу массива, то выйдем из функции
+            driver.close()
             return "Error in Parsing"
 
     trs = my_table.find_all("tr")
@@ -180,18 +181,20 @@ def enter_the_day(message):
     if date_check(current_date):
         dbworker.set_state(str(message.chat.id) + 'BEGIN_DAY', current_date)
         bot.send_message(message.chat.id, 'Cпасибо за запрос, я ищу необходимые данные. Подожди несколько секунд.\n')
-        get_stat_from_finmarket(current_CCY, current_date)
-        my_f = open(current_CCY+'-'+ str(current_date.replace('.','-'))+'.png', 'rb')
-        # создаем словарь фото
-        files = {'photo': my_f}
-        # отправляем это фото через сервер телеграма
-        requests.post('https://api.telegram.org/bot' + config.token + '/sendPhoto?chat_id={}'.format(message.chat.id),
+        if get_stat_from_finmarket(current_CCY, current_date)=="Error in Parsing":
+            bot.send_message(message.chat.id, 'Данные на эту дату недоступны попробуй другую')
+        else:
+            my_f = open(current_CCY+'-'+ str(current_date.replace('.','-'))+'.png', 'rb')
+            # создаем словарь фото
+            files = {'photo': my_f}
+            # отправляем это фото через сервер телеграма
+            requests.post('https://api.telegram.org/bot' + config.token + '/sendPhoto?chat_id={}'.format(message.chat.id),
                   files=files)
-        # закрываем файл
-        my_f.close()
-        # удаляем файл
-        os.remove(current_CCY+'-'+ str(current_date.replace('.','-'))+'.png')
-        dbworker.set_state(message.chat.id, dbworker.States.S_START.value)
+            # закрываем файл
+            my_f.close()
+            # удаляем файл
+            os.remove(current_CCY+'-'+ str(current_date.replace('.','-'))+'.png')
+            dbworker.set_state(message.chat.id, dbworker.States.S_START.value)
     else:
         bot.send_message(message.chat.id, "Дата была введена неверно, возможно год < 2010 или > 2020.\n"
                                           "Попробуй нажать /reset для запуска сначала.")
