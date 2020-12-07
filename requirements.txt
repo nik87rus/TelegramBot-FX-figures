@@ -8,4 +8,5 @@ requests~=2.24.0
 pandas~=1.1.4
 pyTelegramBotAPI~=3.7.3
 selenium==3.141.0
+vedis==0.7.1
 lxml
